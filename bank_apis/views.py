@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.shortcuts import render
-
 # Create your views here.
 import json
 from django.http import HttpResponse
 from django.views import View
 from models import Branches
+import exceptions
 
 
 def index(request):
@@ -15,10 +14,14 @@ def index(request):
 
 
 class BankIFSCView(View):
+
     def get(self, request, code):
         bank_detail_values = ('bank__name', 'district', 'city', 'state', 'address')
-        bank_details = Branches.objects.filter(ifsc=code).values(*bank_detail_values)
-        return HttpResponse(status=200, content=json.dumps(list(bank_details)))
+        try:
+            bank_details = Branches.objects.filter(ifsc=code).values(*bank_detail_values)
+            return HttpResponse(status=200, content=json.dumps(list(bank_details)))
+        except exceptions.IndexError:
+            return HttpResponse(status=400)
 
 
 class BankByCityView(View):
@@ -26,6 +29,9 @@ class BankByCityView(View):
     def get(self, request, **kwargs):
         bank_name = (kwargs.get('name')).upper()
         city = (kwargs.get('city')).upper()
-        all_banks = Branches.objects.filter(bank__name=bank_name, city=city).values()
-        return HttpResponse(status=200, content=json.dumps(list(all_banks)))
+        try:
+            all_banks = Branches.objects.filter(bank__name=bank_name, city=city).values()
+            return HttpResponse(status=200, content=json.dumps(list(all_banks)))
+        except IndexError:
+            return HttpResponse(status=400)
 
